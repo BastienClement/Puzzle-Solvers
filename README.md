@@ -60,7 +60,7 @@ Example output
 --------------
 
 ```
-Nitrogen:~ galedric$ time luajit bimaru.lua   3,2,1,2,2,0,1,1,7,1  4,0,2,1,2,0,5,0,5,1   1:7=w 1:9=w 7:1=o   1=4 2=3 3=2 4=1 
+galedric$ time luajit bimaru.lua 3,2,1,2,2,0,1,1,7,1 4,0,2,1,2,0,5,0,5,1 1:7=w 1:9=w 7:1=o 1=4 2=3 3=2 4=1 
 Input grid:
  ------------------------------ 
 |                   ~     ~    | 3
