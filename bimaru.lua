@@ -249,10 +249,9 @@ end
 local function print_grid()
 	local done = true
 	
-	local border = " " .. ("-"):rep(boardW * 3) .. " "
-	print(border)
+	print("┌" .. ("─"):rep(boardW * 3) .. "┐")
 	for r = 1, boardH do
-		io.write("|")
+		io.write("│")
 		for c = 1, boardW do
 			local type = grid[r][c].type
 			if type == "WATER" then
@@ -276,9 +275,9 @@ local function print_grid()
 				io.write("   ")
 			end
 		end
-		print("| " .. rowCounts[r])
+		print("│ " .. rowCounts[r])
 	end
-	print(border)
+	print("└" .. ("─"):rep(boardW * 3) .. "┘")
 	io.write(" ")
 	for c = 1, boardW do
 		local count = colCounts[c]
