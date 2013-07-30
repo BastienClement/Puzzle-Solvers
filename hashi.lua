@@ -159,9 +159,6 @@ do
 		a.linksNode[aSide] = b
 		b.linksNode[bSide] = a
 		
-		a.linksCount = a.linksCount + 1
-		b.linksCount = b.linksCount + 1
-		
 		return link
 	end
 	
@@ -239,8 +236,7 @@ do
 			row = r,
 			col = c,
 			links = {},
-			linksNode = {},
-			linksCount = 0
+			linksNode = {}
 		}
 		
 		setmetatable(node, node_mt)
