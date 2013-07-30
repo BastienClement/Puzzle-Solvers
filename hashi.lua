@@ -447,6 +447,15 @@ do
 	print_grid()
 end
 
+local completed = 0
+for _, node in ipairs(nodes) do
+	if node.complete then
+		completed = completed + 1
+	end
+end
+
+print((completed == #nodes) and "Solved!" or "Unable to solve...")
+
 --[[
 for side, link in pairs(grid[6][1].links) do
 	print(SIDES[side], link.count, link.possible, link.complete)
