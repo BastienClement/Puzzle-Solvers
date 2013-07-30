@@ -100,6 +100,20 @@ function node_mt:SetLinkPossible(side, possible)
 	return true
 end
 
+function node_mt:RemoveLink(l)
+	for side, link in pairs(self.links) do
+		if link == l then
+			self.links[side] = nil
+			self.linksNode[side] = nil
+
+			link.a:UpdateCount()
+			link.b:UpdateCount()
+			
+			return
+		end
+	end
+end
+
 function node_mt:SetLink(side, count, exact)
 	local link = self.links[side]
 	assert(link, "link is undefined")
@@ -119,14 +133,12 @@ function node_mt:SetLink(side, count, exact)
 	if count > 0 then
 		for i, link in pairs(link.crossing) do
 			assert(not link.complete or link.count == 0, "a crossing link is already completed")
-		
-			link.count = 0
-			link.possible = 0
-			link.complete = true
-			
-			link.a:UpdateCount()
-			link.b:UpdateCount()
+			link.a:RemoveLink(link)
+			link.b:RemoveLink(link)
 		end
+	else
+		link.a:RemoveLink(link)
+		link.b:RemoveLink(link)
 	end
 	
 	if exact or link.count == link.possible then
