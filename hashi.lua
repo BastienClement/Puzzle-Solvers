@@ -21,14 +21,18 @@
 	SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ]]
 
+-- The game grid and its dimensions
 local grid = {}
 local gridW, gridH = 0, 0
 
+-- A list of all nodes
 local nodes = {}
 
+-- Aliases for node sides
 local TOP, RIGHT, BOTTOM, LEFT = 1, 2, 3, 4
 local HORIZONTAL, VERTICAL = 1, 2
 
+-- Debug Strings
 local SIDES = {
 	[TOP] = "TOP",
 	[RIGHT] = "RIGHT",
@@ -43,11 +47,13 @@ local ORIENTATIONS = {
 
 local print_grid
 
--- Objects
+-- NODE OBJECT
 
 local node_mt = {}
 node_mt.__index = node_mt
 
+-- Updates the count field of the node and completes
+-- the node if the count matches the value
 function node_mt:UpdateCount()
 	self.count = 0
 	
@@ -66,10 +72,12 @@ function node_mt:UpdateCount()
 	end
 end
 
+-- Returns how many links are missing
 function node_mt:Missing()
 	return self.value - self.count
 end
 
+-- Changes the maximum number of links possible on a given side
 function node_mt:SetLinkPossible(side, possible)
 	local link = self.links[side]
 	assert(link, "link is undefined")
@@ -83,6 +91,7 @@ function node_mt:SetLinkPossible(side, possible)
 	assert(possible <= link.possible, "attempting to assign a greater possible value ")
 	
 	if possible == link.count then
+		-- The minimum equals the maximum, so this link is defined
 		self:SetLink(side, possible, true)
 	else
 		link.possible = possible
@@ -91,8 +100,10 @@ function node_mt:SetLinkPossible(side, possible)
 	return true
 end
 
+-- Removes a link from a node (dead-link)
 function node_mt:RemoveLink(l)
 	assert(l.count == 0, "cannot remove a used link")
+	
 	for side, link in pairs(self.links) do
 		if link == l then
 			self.links[side] = nil
@@ -102,6 +113,8 @@ function node_mt:RemoveLink(l)
 	end
 end
 
+-- Changes the minimum number of links possible on a given side
+-- If exact is given, the maximum is also updated and the node is completed
 function node_mt:SetLink(side, count, exact)
 	local link = self.links[side]
 	assert(link, "link is undefined")
@@ -115,20 +128,24 @@ function node_mt:SetLink(side, count, exact)
 	assert(count >= link.count, "attempting to assign a lesser count value ")
 	link.count = count
 	
+	-- Update linked nodes count
 	link.a:UpdateCount()
 	link.b:UpdateCount()
 	
 	if count > 0 then
+		-- We must removes all crossing links
 		for i, link in pairs(link.crossing) do
-			assert(not link.complete or link.count == 0, "a crossing link is already completed")
+			assert(link.count == 0, "a crossing link is already used")
 			link.a:RemoveLink(link)
 			link.b:RemoveLink(link)
 		end
 	else
+		-- This is a dead link, removes it
 		link.a:RemoveLink(link)
 		link.b:RemoveLink(link)
 	end
 	
+	-- Closing the link if the link is defined
 	if exact or link.count == link.possible then
 		link.possible = count
 		link.complete = true
@@ -137,19 +154,21 @@ function node_mt:SetLink(side, count, exact)
 	return true
 end
 
--- Parse
+-- PARSE
 
 do
+	-- Create a link object
 	local function makeLink(a, b, orientation)
 		local link = {
-			a = a,
-			b = b,
-			count = 0,
-			possible = 2,
-			complete = false,
-			crossing = {}
+			a = a,            -- First linked node
+			b = b,            -- Second linked node
+			count = 0,        -- Bridge count
+			possible = 2,     -- Maximum number of possible bridge
+			complete = false, -- Is this link completed?
+			crossing = {}     -- List of all crossing links
 		}
 		
+		-- Add the link in node objects
 		local aSide = (orientation == VERTICAL) and BOTTOM or RIGHT
 		local bSide = (orientation == VERTICAL) and TOP or LEFT
 		
@@ -187,7 +206,10 @@ do
 	end
 	
 	-- Look for nodes around the current node
+	-- This function only look backward because 
+	-- the grid is only partially parsed
 	local function trace(r, c, node)
+		
 		local up = traceUp(r, c)
 		if up then
 			local link = makeLink(up, node, VERTICAL)
@@ -222,6 +244,7 @@ do
 						[HORIZONTAL] = link
 					}
 				end
+				-- Note: You cannot cross a link on the left!
 			end
 		end
 	end
@@ -229,24 +252,26 @@ do
 	-- Create a node object
 	local function makeNode(r, c, v)
 		local node = {
-			node = true,
-			complete = false,
-			value = v,
-			count = 0,
-			row = r,
-			col = c,
-			links = {},
-			linksNode = {}
+			node = true,      -- Used to identify a node object
+			complete = false, -- Is this node completed?
+			value = v,        -- How many bridges this node requires
+			count = 0,        -- Bridge count
+			row = r,          -- The row of this node
+			col = c,          -- The column of this node
+			links = {},       -- A list of all links from this node
+			linksNode = {}    -- A list of linked node from this node
 		}
 		
 		setmetatable(node, node_mt)
 		trace(r, c, node)
 		
+		-- Add this node in the nodes list
 		nodes[#nodes + 1] = node
 		return node
 	end
 	
 	-- Parse input
+	-- This script reads from stdin
 	local function parse()
 		local r = 1
 		for line in io.lines() do
@@ -258,6 +283,7 @@ do
 		
 			local c = 1
 			for char in line:gmatch(".") do
+				-- The '.' char can be used to stop the parsing
 				if char == "." then
 					return
 				end
@@ -282,9 +308,11 @@ do
 	parse()
 end
 
--- Print
+-- PRINT
 
 do
+	-- A list of circled number
+	-- NOT USED
 	local circled = {
 		[1] = "①",
 		[2] = "②",
@@ -296,13 +324,14 @@ do
 		[8] = "⑧"
 	}
 	
+	-- Prints the grid to stdout
 	function print_grid()
 		for r = 1, gridH do
 			for c = 1, gridW do
 				local cell = grid[r][c]
 				if cell then
 					if cell.node then
-						io.write(cell.complete and "[" or " ", cell.value, cell.complete and "]" or " ")
+						io.write((cell.complete and "[" or " "), cell.value, (cell.complete and "]" or " "))
 					elseif cell.links then
 						local h = cell[HORIZONTAL]
 						local v = cell[VERTICAL]
@@ -328,31 +357,34 @@ end
 print "Input:"
 print_grid()
 
--- Solving
+-- SOLVING
 
 do
 	print "Solving..."
 	local change_made = true
 	
+	-- Wrapper function to node:SetLinkPossible
+	-- Updates change_made if the function returns true
 	local function set_link_possible(node, side, possible)
 		if node:SetLinkPossible(side, possible) then
 			change_made = true
 		end
 	end
 	
+	-- Wrapper function to node:SetLink
+	-- Updates change_made if the function returns true
 	local function set_link(node, side, count, exact)
 		if node:SetLink(side, count, exact) then
 			change_made = true
 		end
 	end
 
+	-- Main solving loop
 	while change_made do
 		change_made = false
 		
 		for _, node in next, nodes do
 			if not node.complete then
-				local value = node.value
-				
 				-- Node with 1 missing link can only be linked once more
 				if node:Missing() == 1 then
 					for side, link in pairs(node.links) do
@@ -362,7 +394,8 @@ do
 					end
 				end
 				
-				-- A node has only the exact link count available
+				-- A node has only the exact bridge count available
+				-- So each link is used for its maximum bridge capacity
 				if not node.complete then
 					local possible = 0
 					for side, link in pairs(node.links) do
@@ -379,6 +412,8 @@ do
 				end
 				
 				-- Find required sides
+				-- Assuming a side is not used, can the node still be completed?
+				-- If not, the excluded side is required to complete the node
 				if not node.complete then
 					local missing = node:Missing()
 					
@@ -400,35 +435,50 @@ do
 				end
 				
 				-- Closed circuits
+				-- If linking two nodes creates a closed completed subset of the grid
+				-- then it will be imposible to link this subset with the grid and
+				-- complete the puzzle. We must remove one possible bridge from this link.
 				if not node.complete then
 					local missing = node:Missing()
 					
+					-- This is only usable if the node is missing 1 or 2 bridges
 					if missing == 1 or missing == 2 then
 						for side, link in pairs(node.links) do
 							local n = node.linksNode[side]
+							-- Each nodes requires the same bridge count and can be linked together
 							if n:Missing() == missing and (not link.complete) and link.possible == missing then
+								-- List of walked node to handle loops and counter
 								local walked = { [node] = true, [n] = true }
 								local walkedCount = 2
-					
+								
+								-- Walk the nodes graph and return if this is
+								-- a closed circuit or not
 								local function walk(node)
 									for side, n in pairs(node.linksNode) do
 										if node.links[side].count > 0 and not walked[n] then
 											if n.complete then
 												walked[n] = true
 												walkedCount = walkedCount + 1
-									
+												
+												-- Recursive walk
 												if not walk(n) then
 													return false
 												end
 											else
+												-- If a node in the circuit is not completed, then
+												-- we can hope to link it with other nodes later
 												return false
 											end
 										end
 									end
-						
+									
+									-- All nodes are completed, this is a closed circuit
 									return true
 								end
 								
+								-- If both side of the link are closed and the walked node
+								-- count is not equal to the total number of nodes, then
+								-- this is a closed circuit
 								if walk(node) and walk(n) and walkedCount ~= #nodes then
 									set_link_possible(node, side, link.possible - 1)
 								end
@@ -440,9 +490,11 @@ do
 		end
 	end
 	
+	-- Solving done. Print the grid.
 	print_grid()
 end
 
+-- Check that all nodes are completed...
 local completed = 0
 for _, node in ipairs(nodes) do
 	if node.complete then
@@ -450,6 +502,7 @@ for _, node in ipairs(nodes) do
 	end
 end
 
+-- ... and print the result
 print((completed == #nodes) and "Solved!" or "Unable to solve...")
 
 --[[
