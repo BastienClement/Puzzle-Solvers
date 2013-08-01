@@ -88,13 +88,11 @@ function node_mt:SetLinkPossible(side, possible)
 	
 	assert(link.count <= possible)
 	assert(possible <= link.possible, "attempting to assign a greater possible value ")
-	link.possible = possible
 	
 	if possible == link.count then
 		self:SetLink(side, possible, true)
 	else
-		link.a:UpdateCount()
-		link.b:UpdateCount()
+		link.possible = possible
 	end
 	
 	return true
