@@ -101,14 +101,11 @@ function node_mt:SetLinkPossible(side, possible)
 end
 
 function node_mt:RemoveLink(l)
+	assert(l.count == 0, "cannot remove a used link")
 	for side, link in pairs(self.links) do
 		if link == l then
 			self.links[side] = nil
 			self.linksNode[side] = nil
-
-			link.a:UpdateCount()
-			link.b:UpdateCount()
-			
 			return
 		end
 	end
