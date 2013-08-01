@@ -29,13 +29,6 @@ local nodes = {}
 local TOP, RIGHT, BOTTOM, LEFT = 1, 2, 3, 4
 local HORIZONTAL, VERTICAL = 1, 2
 
-local OPPOSITE_SIDE = {
-	[TOP] = BOTTOM,
-	[RIGHT] = LEFT,
-	[BOTTOM] = TOP,
-	[LEFT] = RIGHT
-}
-
 local SIDES = {
 	[TOP] = "TOP",
 	[RIGHT] = "RIGHT",
